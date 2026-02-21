@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hindu Yuva Maha Samelan 2026 - Ram Navami Registration</title>
+    <title>Maha Hindu Yuva Samelan 2026 - Ram Navami Registration</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Poppins:wght@300;400;500;600&family=Hind:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -964,11 +964,39 @@
     <!-- Ram Decoration -->
     <div class="ram-decoration" title="Jai Shree Ram"></div>
 
+    <!-- include Supabase client (replace with latest version if needed) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('registrationForm');
             const successMessage = document.getElementById('successMessage');
             const loading = document.getElementById('loading');
+
+            // ----------------------------------------------------------------
+            // Supabase setup – update the anon key with the value from your
+            // project settings. The project ID you provided is used in the URL.
+            // Create a table called `registrations` with appropriate columns. For
+            // example:
+            //
+            //   create table registrations (
+            //     id uuid primary key default uuid_generate_v4(),
+            //     full_name text,
+            //     mobile text,
+            //     address text,
+            //     education text,
+            //     college text,
+            //     created_at timestamptz default now()
+            //   );
+            //
+            // Make sure row level security is configured (or disable for testing)
+            // and allow inserts on the anon/public key.
+            // ----------------------------------------------------------------
+
+            const SUPABASE_URL = 'https://wjwekknhqztkhhqcclab.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indqd2Vra25ocXp0a2hocWNjbGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NTc5NTUsImV4cCI6MjA4NzIzMzk1NX0.FqRjGArRWjb--vU6hwXagf3ccuKBsFCEHzKGksJjDSY';
+            // avoid naming collision with the global `supabase` provider
+            const supabaseClient = supabase.createClient('https://wjwekknhqztkhhqcclab.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indqd2Vra25ocXp0a2hocWNjbGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NTc5NTUsImV4cCI6MjA4NzIzMzk1NX0.FqRjGArRWjb--vU6hwXagf3ccuKBsFCEHzKGksJjDSY');
+
 
             // Form validation function
             function validateForm() {
@@ -1056,31 +1084,59 @@
             });
 
             // Form submission
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                
-                if (validateForm()) {
-                    // Show loading
-                    loading.classList.add('show');
-                    
-                    // Simulate processing
-                    setTimeout(() => {
-                        loading.classList.remove('show');
-                        
-                        // Hide form and show success message
-                        form.style.display = 'none';
-                        successMessage.classList.add('show');
-                        
-                        // Create confetti effect
-                        createConfetti();
-                        
-                        // Scroll to success message
-                        successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        
-                        // Play success sound (optional - browser policy may block)
-                        // const audio = new Audio('path-to-sound.mp3');
-                        // audio.play().catch(e => console.log('Audio play failed'));
-                    }, 1500);
+
+                if (!validateForm()) {
+                    return;
+                }
+
+                // show spinner while inserting
+                loading.classList.add('show');
+
+                // gather values
+                const fullName = document.getElementById('fullName');
+                const mobile = document.getElementById('mobile');
+                const address = document.getElementById('address');
+                const education = document.getElementById('education');
+                const college = document.getElementById('college');
+
+                try {
+                    // DEBUG: log values we are sending
+                    console.log('inserting record', {
+                        full_name: fullName.value.trim(),
+                        mobile: mobile.value.trim(),
+                        address: address.value.trim(),
+                        education: education.value,
+                        college: college.value.trim()
+                    });
+
+                    const { data, error } = await supabaseClient
+                        .from('registrations')
+                        .insert([{
+                            full_name: fullName.value.trim(),
+                            mobile: mobile.value.trim(),
+                            address: address.value.trim(),
+                            education: education.value,
+                            college: college.value.trim()
+                        }]);
+
+                    console.log('supabase response', { data, error });
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    // success path
+                    loading.classList.remove('show');
+                    form.style.display = 'none';
+                    successMessage.classList.add('show');
+                    createConfetti();
+                    successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } catch (err) {
+                    loading.classList.remove('show');
+                    console.error('Supabase insert error', err);
+                    alert('Unable to save registration. Please try again later.\n' + (err.message || err));
                 }
             });
 
